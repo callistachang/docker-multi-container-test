@@ -15,6 +15,9 @@ after_success:
     - docker build -t callistachang/multi-nginx ./nginx 
     - docker build -t callistachang/multi-server ./server 
     - docker build -t callistachang/multi-worker ./worker
-    
-
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+    - docker push callistachang/multi-client
+    - docker push callistachang/multi-nginx 
+    - docker push callistachang/multi-server 
+    - docker push callistachang/multi-worker
 # push them to dockerhub!
