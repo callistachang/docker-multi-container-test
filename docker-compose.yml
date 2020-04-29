@@ -1,0 +1,76 @@
+version: '3'
+
+# we need 3 running services for the server
+# postgres: persistent database
+# redis: in-memory store
+# server: express API
+services: 
+    ######################
+    # server related stuff
+    ######################
+    postgres:
+        image: 'postgres:latest'
+        environment:
+            - POSTGRES_PASSWORD=postgres_password
+    redis:
+        image: 'redis:latest'
+      
+    api:
+        # look for Dockerfile.dev in the server directory
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./server
+        # the /app/node_modules should not be overriden with our local version
+        # leave it as is.
+        # now, when anything changes in the server directory,
+        # the changes will be reflected instantly.
+        volumes:
+            - /app/node_modules
+            - ./server:/app
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - PGUSER=postgres
+            - PGHOST=postgres
+            - PGDATABASE=postgres
+            - PGPASSWORD=postgres_password
+            - PGPORT=5432
+        depends_on:
+            - postgres
+
+    ######################
+    # client related stuff
+    ######################
+    client:
+        stdin_open: true
+        build:
+            dockerfile: Dockerfile.dev 
+            context: ./client 
+        volumes:
+            - /app/node_modules 
+            - ./client:/app 
+    
+    ######################
+    # worker related stuff
+    ######################
+    worker:
+        build:
+            dockerfile: Dockerfile.dev 
+            context: ./worker 
+        volumes:
+            - /app/node_modules 
+            - ./worker:/app
+        environment:
+            - REDIS_HOST=redis 
+            - REDIS_PORT=6379
+
+    ######################
+    # nginx related stuff
+    ######################
+    nginx:
+        restart: always
+        build:
+            dockerfile: Dockerfile.dev 
+            context: ./nginx 
+        ports:
+            - '3050:80'
